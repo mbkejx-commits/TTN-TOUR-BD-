@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<meta content="#030407" name="theme-color">
+<meta content="no-referrer" name="referrer">
+<script>document.title = decodeURIComponent(window.location.pathname.split('/').pop().replace(/\.html$/i, '')) || 'Untitled';</script><title>FFX 9.5</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&amp;family=Rajdhani:wght@400;500;600;700&amp;family=Share+Tech+Mono&amp;display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    :root {
+      --a: #ff0033;
+      --ag: rgba(255, 0, 51, 0.75);
+      --ad: rgba(255, 0, 51, 0.12);
+      --ab: rgba(255, 0, 51, 0.38);
+      --bg0: #030407;
+      --bg1: #07080f;
+      --bg2: #0d0f1b;
+      --brd: rgba(255, 255, 255, 0.08);
+      --brda: rgba(255, 0, 51, 0.35);
+      --txt: #eef0f8;
+      --txm: #9598b3;
+      --txd: #565872;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-size: 13px;
+    }
+    
+    @media (min-width: 640px) {
+      html { font-size: 14.5px; }
+    }
+    
+    @media (min-width: 768px) {
+      html { font-size: 16px; }
+    }
+
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: var(--bg0);
+      color: var(--txt);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+      position: relative;
+      /* Prevent momentum-scroll jank on mobile */
+      overscroll-behavior-y: contain;
+    }
+
+    /* Ambient Lighting & High-tech background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: 
+        radial-gradient(circle 800px at 50% -10%, var(--ad) 0%, transparent 70%),
+        radial-gradient(circle 600px at 85% 60%, rgba(255, 0, 51, 0.06) 0%, transparent 65%),
+        radial-gradient(circle 700px at 15% 80%, rgba(255, 0, 51, 0.05) 0%, transparent 65%);
+      z-index: 0;
+      pointer-events: none;
+      /* GPU layer isolation: prevents repainting main layer on scroll */
+      transform: translateZ(0);
+      will-change: transform;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(var(--grid-line, rgba(255, 0, 51, 0.025)) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line, rgba(255, 0, 51, 0.025)) 1px, transparent 1px);
+      background-size: 48px 48px;
+      z-index: 0;
+      pointer-events: none;
+      mask-image: radial-gradient(ellipse 90% 70% at 50% 40%, black 40%, transparent 100%);
+      /* GPU layer isolation */
+      transform: translateZ(0);
+      will-change: transform;
+    }
+
+    .font-orbitron { font-family: 'Orbitron', monospace; }
+    .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
+    .font-mono-code { font-family: 'Share Tech Mono', monospace; }
+
+    /* Scanline effect */
+    .scanline {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent 0%, var(--ag) 40%, #ffffff 50%, var(--ag) 60%, transparent 100%);
+      z-index: 99;
+      pointer-events: none;
+      animation: scanDown 10s linear infinite;
+      /* Own GPU layer — no main-thread repaint on each tick */
+      will-change: top;
+      transform: translateZ(0);
+    }
+
+    @keyframes scanDown {
+      0% { top: -2px; opacity: 0.8; }
+      85% { opacity: 0.25; }
+      100% { top: 100vh; opacity: 0; }
+    }
+
+    #pCanvas {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      /* Promote canvas to its own compositor layer */
+      transform: translateZ(0);
+      will-change: contents;
+    }
+
+    /* Pulse Dots */
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--a);
+      flex-shrink: 0;
+      animation: cyberPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes cyberPulse {
+      0%, 100% { box-shadow: 0 0 0 0 var(--ab); }
+      50% { box-shadow: 0 0 0 7px transparent; }
+    }
+
+    /* Cyber Card System */
+    .cyber-card {
+      background: rgba(9, 11, 20, 0.72);
+      border: 1px solid var(--brd);
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.03);
+      /* Only border-color and box-shadow ever change on :hover, so only those are
+         watched (was `transition: all`) — same visual transition, less to track. */
+      transition: border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .cyber-card:hover {
+      border-color: var(--brda);
+      box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.8), 0 0 24px -6px var(--ad);
+    }
+
+    .cyber-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 5%, var(--ab) 50%, transparent 95%);
+    }
+
+    /* 3D Smartphone Holographic Showcase */
+    .phone-perspective-frame {
+      perspective: 1200px;
+      transform-style: preserve-3d;
+    }
+
+    .phone-mockup {
+      transform: rotateY(-9deg) rotateX(7deg) rotateZ(1deg);
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s ease;
+      box-shadow: 
+        20px 30px 60px rgba(0,0,0,0.85),
+        -10px -10px 40px var(--ad),
+        0 0 50px -10px var(--ab);
+      /* Own GPU layer for 3D transforms */
+      will-change: transform;
+      backface-visibility: hidden;
+    }
+
+    .phone-mockup:hover {
+      transform: rotateY(-3deg) rotateX(3deg) rotateZ(0deg) translateY(-8px);
+      box-shadow: 
+        28px 40px 80px rgba(0,0,0,0.95),
+        -15px -15px 50px var(--ad),
+        0 0 70px -5px var(--ag);
+    }
+
+    /* Primary glowing CTA button */
+    .dl-hero-btn {
+      background: linear-gradient(135deg, var(--a) 0%, #b30024 100%);
+      box-shadow: 0 0 35px var(--ab), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      border: 1px solid var(--ag);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+      /* Tap immediately on mobile without 300ms delay */
+      touch-action: manipulation;
+      will-change: transform, box-shadow;
+    }
+
+    .dl-hero-btn::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .dl-hero-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 50px var(--ag), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+
+    .dl-hero-btn:hover::after {
+      opacity: 1;
+    }
+
+    .dl-hero-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* Live Telemetry Wave Canvas */
+    #latencyWave {
+      width: 100%;
+      height: 48px;
+    }
+
+    /* Color Switcher Floating Button */
+    .mob-theme-btn {
+      position: fixed;
+      right: 20px;
+      bottom: 24px;
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(7, 8, 15, 0.98), rgba(20, 22, 38, 0.98));
+      border: 1px solid var(--brda);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      z-index: 500;
+      cursor: pointer;
+      box-shadow: 0 0 25px var(--ad), 0 10px 30px rgba(0, 0, 0, 0.7);
+      transition: all 0.3s var(--ease);
+      backdrop-filter: blur(24px);
+    }
+
+    .mob-theme-btn:hover {
+      border-color: var(--a);
+      box-shadow: 0 0 35px var(--ab);
+      transform: scale(1.08);
+    }
+
+    .mob-theme-panel {
+      position: fixed;
+      right: 76px;
+      bottom: 24px;
+      background: rgba(7, 9, 16, 0.98);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 14px 12px;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 500;
+      backdrop-filter: blur(35px);
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.95);
+      align-items: center;
+    }
+
+    .mob-theme-panel.open {
+      display: flex;
+      animation: fadeInScale 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: scale(0.9) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .thDot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s var(--ease);
+      flex-shrink: 0;
+    }
+
+    .thDot:hover {
+      transform: scale(1.25);
+    }
+
+    .thDot.on {
+      border-color: #ffffff;
+      box-shadow: 0 0 14px currentColor;
+    }
+
+    /* Toast */
+    #toastBox {
+      position: fixed;
+      bottom: 24px;
+      left: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast-item {
+      background: rgba(11, 13, 24, 0.96);
+      border: 1px solid var(--brd);
+      border-left: 3px solid var(--a);
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.5px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transform: translateY(20px);
+      opacity: 0;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.85);
+    }
+
+    .toast-item.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Code Hash Field */
+    .hash-badge {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+    .hash-badge:hover {
+      border-color: var(--brda);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Modal / QR Overlay */
+    #qrModal {
+      backdrop-filter: blur(20px);
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg0);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--a);
+      border-radius: 3px;
+    }
+
+    /* Mobile performance tuning: same effects, lighter GPU cost.
+       Backdrop blur is the #1 GPU cost on phones — scaled down here.
+       All animations, transitions, and visual effects kept intact. */
+    @media (max-width: 768px) {
+      /* Reduce blur radius significantly — still looks glassy but far cheaper */
+      .cyber-card { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+      .mob-theme-btn { backdrop-filter: blur(8px); }
+      .mob-theme-panel { backdrop-filter: blur(10px); }
+      #qrModal { backdrop-filter: blur(8px); }
+      /* header's blur reduction now lives on its own class (backdrop-blur-[10px] md:backdrop-blur-xl)
+         further down — a plain `header{}` rule here could never win against a Tailwind
+         class selector applied directly on the element, so it never actually fired. */
+
+      /* Faster tap response — no 300ms click delay */
+      button, a { touch-action: manipulation; }
+
+      /* Reduce paint cost of the pulse animation */
+      .pulse-dot { animation-duration: 3s; }
+
+      /* GPU isolation for heavy animated elements */
+      .phone-mockup { contain: layout style; }
+      .phone-perspective-frame { contain: layout; }
+
+      /* Off-screen section rendering deferred */
+      #features, #guide { content-visibility: auto; contain-intrinsic-size: 0 600px; }
+    }
+  </style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}[type='text'],input:where(:not([type])),[type='email'],[type='url'],[type='password'],[type='number'],[type='date'],[type='datetime-local'],[type='month'],[type='search'],[type='tel'],[type='time'],[type='week'],[multiple],textarea,select{-webkit-appearance:none;appearance:none;background-color:#fff;border-color:#6b7280;border-width:1px;border-radius:0px;padding-top:0.5rem;padding-right:0.75rem;padding-bottom:0.5rem;padding-left:0.75rem;font-size:1rem;line-height:1.5rem;--tw-shadow:0 0 #0000;}[type='text']:focus, input:where(:not([type])):focus, [type='email']:focus, [type='url']:focus, [type='password']:focus, [type='number']:focus, [type='date']:focus, [type='datetime-local']:focus, [type='month']:focus, [type='search']:focus, [type='tel']:focus, [type='time']:focus, [type='week']:focus, [multiple]:focus, textarea:focus, select:focus{outline:2px solid transparent;outline-offset:2px;--tw-ring-inset:var(--tw-empty,/*!*/ /*!*/);--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:#2563eb;--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);border-color:#2563eb}input::placeholder,textarea::placeholder{color:#6b7280;opacity:1}::-webkit-datetime-edit-fields-wrapper{padding:0}::-webkit-date-and-time-value{min-height:1.5em;text-align:inherit}::-webkit-datetime-edit{display:inline-flex}::-webkit-datetime-edit,::-webkit-datetime-edit-year-field,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute-field,::-webkit-datetime-edit-second-field,::-webkit-datetime-edit-millisecond-field,::-webkit-datetime-edit-meridiem-field{padding-top:0;padding-bottom:0}select{background-image:url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");background-position:right 0.5rem center;background-repeat:no-repeat;background-size:1.5em 1.5em;padding-right:2.5rem;print-color-adjust:exact}[multiple],[size]:where(select:not([size="1"])){background-image:initial;background-position:initial;background-repeat:unset;background-size:initial;padding-right:0.75rem;print-color-adjust:unset}[type='checkbox'],[type='radio']{-webkit-appearance:none;appearance:none;padding:0;print-color-adjust:exact;display:inline-block;vertical-align:middle;background-origin:border-box;-webkit-user-select:none;user-select:none;flex-shrink:0;height:1rem;width:1rem;color:#2563eb;background-color:#fff;border-color:#6b7280;border-width:1px;--tw-shadow:0 0 #0000}[type='checkbox']{border-radius:0px}[type='radio']{border-radius:100%}[type='checkbox']:focus,[type='radio']:focus{outline:2px solid transparent;outline-offset:2px;--tw-ring-inset:var(--tw-empty,/*!*/ /*!*/);--tw-ring-offset-width:2px;--tw-ring-offset-color:#fff;--tw-ring-color:#2563eb;--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow)}[type='checkbox']:checked,[type='radio']:checked{border-color:transparent;background-color:currentColor;background-size:100% 100%;background-position:center;background-repeat:no-repeat}[type='checkbox']:checked{background-image:url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");}@media (forced-colors: active) {[type='checkbox']:checked{-webkit-appearance:auto;appearance:auto}}[type='radio']:checked{background-image:url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='3'/%3e%3c/svg%3e");}@media (forced-colors: active) {[type='radio']:checked{-webkit-appearance:auto;appearance:auto}}[type='checkbox']:checked:hover,[type='checkbox']:checked:focus,[type='radio']:checked:hover,[type='radio']:checked:focus{border-color:transparent;background-color:currentColor}[type='checkbox']:indeterminate{background-image:url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3e%3cpath stroke='white' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M4 8h8'/%3e%3c/svg%3e");border-color:transparent;background-color:currentColor;background-size:100% 100%;background-position:center;background-repeat:no-repeat;}@media (forced-colors: active) {[type='checkbox']:indeterminate{-webkit-appearance:auto;appearance:auto}}[type='checkbox']:indeterminate:hover,[type='checkbox']:indeterminate:focus{border-color:transparent;background-color:currentColor}[type='file']{background:unset;border-color:inherit;border-width:0;border-radius:0;padding:0;font-size:unset;line-height:inherit}[type='file']:focus{outline:1px solid ButtonText;outline:1px auto -webkit-focus-ring-color}.pointer-events-none{pointer-events:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.sticky{position:sticky}.inset-0{inset:0px}.-bottom-4{bottom:-1rem}.-left-6{left:-1.5rem}.-right-4{right:-1rem}.-right-6{right:-1.5rem}.bottom-20{bottom:5rem}.left-1\/2{left:50%}.right-4{right:1rem}.top-0{top:0px}.top-1\/3{top:33.333333%}.top-4{top:1rem}.top-6{top:1.5rem}.-z-10{z-index:-10}.z-10{z-index:10}.z-30{z-index:30}.z-50{z-index:50}.z-\[10000\]{z-index:10000}.z-\[999999\]{z-index:999999}.z-\[99999\]{z-index:99999}.mx-auto{margin-left:auto;margin-right:auto}.mb-1{margin-bottom:0.25rem}.mb-12{margin-bottom:3rem}.mb-16{margin-bottom:4rem}.mb-2{margin-bottom:0.5rem}.mb-3{margin-bottom:0.75rem}.mb-4{margin-bottom:1rem}.mb-5{margin-bottom:1.25rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.mr-2{margin-right:0.5rem}.mt-2{margin-top:0.5rem}.mt-3{margin-top:0.75rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.mt-8{margin-top:2rem}.mb-1\.5{margin-bottom:0.375rem}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.inline-flex{display:inline-flex}.grid{display:grid}.hidden{display:none}.h-1{height:0.25rem}.h-1\.5{height:0.375rem}.h-10{height:2.5rem}.h-12{height:3rem}.h-2{height:0.5rem}.h-2\.5{height:0.625rem}.h-20{height:5rem}.h-3{height:0.75rem}.h-44{height:11rem}.h-5{height:1.25rem}.h-6{height:1.5rem}.h-8{height:2rem}.h-9{height:2.25rem}.h-\[100\%\]{height:100%}.h-\[30\%\]{height:30%}.h-\[35\%\]{height:35%}.h-\[3px\]{height:3px}.h-\[45\%\]{height:45%}.h-\[50\%\]{height:50%}.h-\[60\%\]{height:60%}.h-\[610px\]{height:610px}.h-\[70\%\]{height:70%}.h-\[75\%\]{height:75%}.h-\[85\%\]{height:85%}.h-\[90\%\]{height:90%}.h-full{height:100%}.min-h-\[150px\]{min-height:150px}.w-0{width:0px}.w-1{width:0.25rem}.w-1\.5{width:0.375rem}.w-10{width:2.5rem}.w-12{width:3rem}.w-2{width:0.5rem}.w-2\.5{width:0.625rem}.w-20{width:5rem}.w-24{width:6rem}.w-28{width:7rem}.w-3{width:0.75rem}.w-44{width:11rem}.w-6{width:1.5rem}.w-64{width:16rem}.w-8{width:2rem}.w-9{width:2.25rem}.w-\[100\%\]{width:100%}.w-\[18\%\]{width:18%}.w-\[290px\]{width:290px}.w-\[8\%\]{width:8%}.w-\[92\%\]{width:92%}.w-\[94\%\]{width:94%}.w-full{width:100%}.min-w-0{min-width:0px}.max-w-2xl{max-width:42rem}.max-w-3xl{max-width:48rem}.max-w-7xl{max-width:80rem}.max-w-\[90\%\]{max-width:90%}.max-w-md{max-width:28rem}.max-w-sm{max-width:24rem}.max-w-xl{max-width:36rem}.flex-1{flex:1 1 0%}.flex-shrink-0{flex-shrink:0}.shrink-0{flex-shrink:0}.-translate-x-1\/2{--tw-translate-x:-50%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.-translate-y-1\/2{--tw-translate-y:-50%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@keyframes bounce{0%, 100%{transform:translateY(-25%);animation-timing-function:cubic-bezier(0.8,0,1,1)}50%{transform:none;animation-timing-function:cubic-bezier(0,0,0.2,1)}}.animate-bounce{animation:bounce 1s infinite}@keyframes ping{75%, 100%{transform:scale(2);opacity:0}}.animate-ping{animation:ping 1s cubic-bezier(0, 0, 0.2, 1) infinite}@keyframes pulse{50%{opacity:.5}}.animate-pulse{animation:pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite}.cursor-default{cursor:default}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-end{align-items:flex-end}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1{gap:0.25rem}.gap-1\.5{gap:0.375rem}.gap-12{gap:3rem}.gap-2{gap:0.5rem}.gap-2\.5{gap:0.625rem}.gap-3{gap:0.75rem}.gap-3\.5{gap:0.875rem}.gap-4{gap:1rem}.gap-6{gap:1.5rem}.gap-8{gap:2rem}.space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.overflow-y-auto{overflow-y:auto}.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.text-ellipsis{text-overflow:ellipsis}.whitespace-nowrap{white-space:nowrap}.rounded-2xl{border-radius:1rem}.rounded-3xl{border-radius:1.5rem}.rounded-\[38px\]{border-radius:38px}.rounded-\[46px\]{border-radius:46px}.rounded-\[48px\]{border-radius:48px}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-xl{border-radius:0.75rem}.rounded-t{border-top-left-radius:0.25rem;border-top-right-radius:0.25rem}.border{border-width:1px}.border-2{border-width:2px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-\[var\(--a\)\]{border-color:var(--a)}.border-\[var\(--ag\)\]{border-color:var(--ag)}.border-\[var\(--brda\)\]{border-color:var(--brda)}.border-emerald-500\/20{border-color:rgb(16 185 129 / 0.2)}.border-emerald-500\/30{border-color:rgb(16 185 129 / 0.3)}.border-white\/10{border-color:rgb(255 255 255 / 0.1)}.border-white\/15{border-color:rgb(255 255 255 / 0.15)}.border-white\/20{border-color:rgb(255 255 255 / 0.2)}.border-white\/5{border-color:rgb(255 255 255 / 0.05)}.border-white\/\[0\.06\]{border-color:rgb(255 255 255 / 0.06)}.border-white\/\[0\.07\]{border-color:rgb(255 255 255 / 0.07)}.border-white\/\[0\.08\]{border-color:rgb(255 255 255 / 0.08)}.bg-\[\#030407\]{--tw-bg-opacity:1;background-color:rgb(3 4 7 / var(--tw-bg-opacity, 1))}.bg-\[\#030407\]\/80{background-color:rgb(3 4 7 / 0.8)}.bg-\[\#05060b\]{--tw-bg-opacity:1;background-color:rgb(5 6 11 / var(--tw-bg-opacity, 1))}.bg-\[\#05060b\]\/60{background-color:rgb(5 6 11 / 0.6)}.bg-\[\#07080f\]\/50{background-color:rgb(7 8 15 / 0.5)}.bg-\[\#070810\]{--tw-bg-opacity:1;background-color:rgb(7 8 16 / var(--tw-bg-opacity, 1))}.bg-\[var\(--a\)\]{background-color:var(--a)}.bg-\[var\(--ad\)\]{background-color:var(--ad)}.bg-black{--tw-bg-opacity:1;background-color:rgb(0 0 0 / var(--tw-bg-opacity, 1))}.bg-black\/50{background-color:rgb(0 0 0 / 0.5)}.bg-black\/60{background-color:rgb(0 0 0 / 0.6)}.bg-black\/70{background-color:rgb(0 0 0 / 0.7)}.bg-black\/80{background-color:rgb(0 0 0 / 0.8)}.bg-blue-400{--tw-bg-opacity:1;background-color:rgb(96 165 250 / var(--tw-bg-opacity, 1))}.bg-blue-500\/80{background-color:rgb(59 130 246 / 0.8)}.bg-emerald-400{--tw-bg-opacity:1;background-color:rgb(52 211 153 / var(--tw-bg-opacity, 1))}.bg-emerald-500\/10{background-color:rgb(16 185 129 / 0.1)}.bg-neutral-600{--tw-bg-opacity:1;background-color:rgb(82 82 82 / var(--tw-bg-opacity, 1))}.bg-neutral-700{--tw-bg-opacity:1;background-color:rgb(64 64 64 / var(--tw-bg-opacity, 1))}.bg-red-500{--tw-bg-opacity:1;background-color:rgb(239 68 68 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-white\/10{background-color:rgb(255 255 255 / 0.1)}.bg-white\/20{background-color:rgb(255 255 255 / 0.2)}.bg-white\/5{background-color:rgb(255 255 255 / 0.05)}.bg-white\/\[0\.03\]{background-color:rgb(255 255 255 / 0.03)}.bg-white\/\[0\.04\]{background-color:rgb(255 255 255 / 0.04)}.bg-white\/\[0\.06\]{background-color:rgb(255 255 255 / 0.06)}.bg-gradient-to-r{background-image:linear-gradient(to right, var(--tw-gradient-stops))}.bg-gradient-to-tr{background-image:linear-gradient(to top right, var(--tw-gradient-stops))}.from-\[var\(--a\)\]{--tw-gradient-from:var(--a) var(--tw-gradient-from-position);--tw-gradient-to:rgb(255 255 255 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.from-\[var\(--ad\)\]{--tw-gradient-from:var(--ad) var(--tw-gradient-from-position);--tw-gradient-to:rgb(255 255 255 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.from-white{--tw-gradient-from:#fff var(--tw-gradient-from-position);--tw-gradient-to:rgb(255 255 255 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.via-\[\#ff7788\]{--tw-gradient-to:rgb(255 119 136 / 0)  var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), #ff7788 var(--tw-gradient-via-position), var(--tw-gradient-to)}.via-white{--tw-gradient-to:rgb(255 255 255 / 0)  var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), #fff var(--tw-gradient-via-position), var(--tw-gradient-to)}.to-\[var\(--a\)\]{--tw-gradient-to:var(--a) var(--tw-gradient-to-position)}.to-transparent{--tw-gradient-to:transparent var(--tw-gradient-to-position)}.bg-clip-text{-webkit-background-clip:text;background-clip:text}.object-contain{object-fit:contain}.object-cover{object-fit:cover}.p-2{padding:0.5rem}.p-2\.5{padding:0.625rem}.p-3{padding:0.75rem}.p-3\.5{padding:0.875rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.p-8{padding:2rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-3\.5{padding-left:0.875rem;padding-right:0.875rem}.px-4{padding-left:1rem;padding-right:1rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-1\.5{padding-top:0.375rem;padding-bottom:0.375rem}.py-10{padding-top:2.5rem;padding-bottom:2.5rem}.py-16{padding-top:4rem;padding-bottom:4rem}.py-2\.5{padding-top:0.625rem;padding-bottom:0.625rem}.py-20{padding-top:5rem;padding-bottom:5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.pb-12{padding-bottom:3rem}.pb-20{padding-bottom:5rem}.pb-3{padding-bottom:0.75rem}.pb-4{padding-bottom:1rem}.pt-10{padding-top:2.5rem}.pt-12{padding-top:3rem}.pt-14{padding-top:3.5rem}.pt-2{padding-top:0.5rem}.pt-3{padding-top:0.75rem}.pt-4{padding-top:1rem}.pt-8{padding-top:2rem}.text-center{text-align:center}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-4xl{font-size:2.25rem;line-height:2.5rem}.text-5xl{font-size:3rem;line-height:1}.text-\[0\.55rem\]{font-size:0.55rem}.text-\[0\.58rem\]{font-size:0.58rem}.text-\[0\.62rem\]{font-size:0.62rem}.text-\[0\.65rem\]{font-size:0.65rem}.text-\[0\.68rem\]{font-size:0.68rem}.text-\[0\.6rem\]{font-size:0.6rem}.text-\[0\.72rem\]{font-size:0.72rem}.text-\[0\.7rem\]{font-size:0.7rem}.text-\[11px\]{font-size:11px}.text-\[5\.5vw\]{font-size:5.5vw}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-black{font-weight:900}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.font-medium{font-weight:500}.uppercase{text-transform:uppercase}.leading-\[1\.08\]{line-height:1.08}.leading-relaxed{line-height:1.625}.tracking-\[0\.25em\]{letter-spacing:0.25em}.tracking-\[0\.2em\]{letter-spacing:0.2em}.tracking-\[0\.4em\]{letter-spacing:0.4em}.tracking-tight{letter-spacing:-0.025em}.tracking-wider{letter-spacing:0.05em}.tracking-widest{letter-spacing:0.1em}.text-\[var\(--a\)\]{color:var(--a)}.text-\[var\(--txt\)\]{color:var(--txt)}.text-blue-400{--tw-text-opacity:1;color:rgb(96 165 250 / var(--tw-text-opacity, 1))}.text-emerald-400{--tw-text-opacity:1;color:rgb(52 211 153 / var(--tw-text-opacity, 1))}.text-neutral-300{--tw-text-opacity:1;color:rgb(212 212 212 / var(--tw-text-opacity, 1))}.text-neutral-400{--tw-text-opacity:1;color:rgb(163 163 163 / var(--tw-text-opacity, 1))}.text-neutral-500{--tw-text-opacity:1;color:rgb(115 115 115 / var(--tw-text-opacity, 1))}.text-red-500{--tw-text-opacity:1;color:rgb(239 68 68 / var(--tw-text-opacity, 1))}.text-transparent{color:transparent}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-white\/10{color:rgb(255 255 255 / 0.1)}.opacity-50{opacity:0.5}.opacity-70{opacity:0.7}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-\[0_0_12px_var\(--a\)\]{--tw-shadow:0 0 12px var(--a);--tw-shadow-colored:0 0 12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-\[0_0_15px_var\(--a\)\]{--tw-shadow:0 0 15px var(--a);--tw-shadow-colored:0 0 15px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-\[0_0_20px_var\(--ad\)\]{--tw-shadow:0 0 20px var(--ad);--tw-shadow-colored:0 0 20px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-\[0_0_40px_var\(--a\)\]{--tw-shadow:0 0 40px var(--a);--tw-shadow-colored:0 0 40px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-\[0_0_6px_var\(--a\)\]{--tw-shadow:0 0 6px var(--a);--tw-shadow-colored:0 0 6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-\[0_0_8px_var\(--a\)\]{--tw-shadow:0 0 8px var(--a);--tw-shadow-colored:0 0 8px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.blur-3xl{--tw-blur:blur(64px);filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.blur-xl{--tw-blur:blur(24px);filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.backdrop-blur-\[10px\]{--tw-backdrop-blur:blur(10px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-colors{transition-property:color, background-color, border-color, fill, stroke, -webkit-text-decoration-color;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, -webkit-text-decoration-color;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-opacity{transition-property:opacity;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.duration-100{transition-duration:100ms}.duration-150{transition-duration:150ms}.duration-200{transition-duration:200ms}.duration-300{transition-duration:300ms}.duration-500{transition-duration:500ms}.duration-700{transition-duration:700ms}.selection\:bg-red-600 *::selection{--tw-bg-opacity:1;background-color:rgb(220 38 38 / var(--tw-bg-opacity, 1))}.selection\:text-white *::selection{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.selection\:bg-red-600::selection{--tw-bg-opacity:1;background-color:rgb(220 38 38 / var(--tw-bg-opacity, 1))}.selection\:text-white::selection{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.hover\:scale-105:hover{--tw-scale-x:1.05;--tw-scale-y:1.05;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.hover\:border-\[var\(--brda\)\]:hover{border-color:var(--brda)}.hover\:bg-\[var\(--a\)\]:hover{background-color:var(--a)}.hover\:bg-\[var\(--ad\)\]:hover{background-color:var(--ad)}.hover\:text-\[var\(--a\)\]:hover{color:var(--a)}.hover\:text-white:hover{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.hover\:shadow-\[0_0_60px_var\(--a\)\]:hover{--tw-shadow:0 0 60px var(--a);--tw-shadow-colored:0 0 60px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.focus\:border-red-600:focus{--tw-border-opacity:1;border-color:rgb(220 38 38 / var(--tw-border-opacity, 1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.focus\:ring-1:focus{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)}.focus\:ring-red-600:focus{--tw-ring-opacity:1;--tw-ring-color:rgb(220 38 38 / var(--tw-ring-opacity, 1))}.group:hover .group-hover\:scale-105{--tw-scale-x:1.05;--tw-scale-y:1.05;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.group:hover .group-hover\:scale-110{--tw-scale-x:1.1;--tw-scale-y:1.1;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@keyframes bounce{0%, 100%{transform:translateY(-25%);animation-timing-function:cubic-bezier(0.8,0,1,1)}50%{transform:none;animation-timing-function:cubic-bezier(0,0,0.2,1)}}.group:hover .group-hover\:animate-bounce{animation:bounce 1s infinite}.group:hover .group-hover\:text-\[var\(--a\)\]{color:var(--a)}.group:hover .group-hover\:opacity-100{opacity:1}.group:hover .group-hover\:shadow-\[0_0_20px_var\(--a\)\]{--tw-shadow:0 0 20px var(--a);--tw-shadow-colored:0 0 20px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}@media (min-width: 360px){.min-\[360px\]\:text-xs{font-size:0.75rem;line-height:1rem}}@media (min-width: 640px){.sm\:inline{display:inline}.sm\:flex{display:flex}.sm\:h-\[640px\]{height:640px}.sm\:w-\[320px\]{width:320px}.sm\:w-auto{width:auto}.sm\:max-w-md{max-width:28rem}.sm\:flex-none{flex:none}.sm\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.sm\:flex-row{flex-direction:row}.sm\:items-center{align-items:center}.sm\:justify-between{justify-content:space-between}.sm\:gap-3{gap:0.75rem}.sm\:whitespace-normal{white-space:normal}.sm\:p-3\.5{padding:0.875rem}.sm\:p-6{padding:1.5rem}.sm\:px-6{padding-left:1.5rem;padding-right:1.5rem}.sm\:px-8{padding-left:2rem;padding-right:2rem}.sm\:py-4{padding-top:1rem;padding-bottom:1rem}.sm\:text-2xl{font-size:1.5rem;line-height:2rem}.sm\:text-3xl{font-size:1.875rem;line-height:2.25rem}.sm\:text-4xl{font-size:2.25rem;line-height:2.5rem}.sm\:text-5xl{font-size:3rem;line-height:1}.sm\:text-\[0\.62rem\]{font-size:0.62rem}.sm\:text-lg{font-size:1.125rem;line-height:1.75rem}.sm\:text-sm{font-size:0.875rem;line-height:1.25rem}.sm\:text-xl{font-size:1.25rem;line-height:1.75rem}}@media (min-width: 768px){.md\:mt-0{margin-top:0px}.md\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.md\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.md\:flex-row{flex-direction:row}.md\:items-end{align-items:flex-end}.md\:justify-start{justify-content:flex-start}.md\:pb-28{padding-bottom:7rem}.md\:pt-20{padding-top:5rem}.md\:text-5xl{font-size:3rem;line-height:1}.md\:text-base{font-size:1rem;line-height:1.5rem}.md\:backdrop-blur-2xl{--tw-backdrop-blur:blur(40px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.md\:backdrop-blur-xl{--tw-backdrop-blur:blur(24px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}}@media (min-width: 1024px){.lg\:col-span-5{grid-column:span 5 / span 5}.lg\:col-span-7{grid-column:span 7 / span 7}.lg\:mx-0{margin-left:0px;margin-right:0px}.lg\:grid-cols-12{grid-template-columns:repeat(12, minmax(0, 1fr))}.lg\:grid-cols-4{grid-template-columns:repeat(4, minmax(0, 1fr))}.lg\:gap-8{gap:2rem}.lg\:px-12{padding-left:3rem;padding-right:3rem}.lg\:px-8{padding-left:2rem;padding-right:2rem}.lg\:text-left{text-align:left}.lg\:text-\[3\.5rem\]{font-size:3.5rem}}</style></head>
+<body class="selection:bg-red-600 selection:text-white" style="">
+<!-- SETUP WIZARD OVERLAY -->
+<style>
+  #setupWizardOverlay::-webkit-scrollbar, #setupWizardOverlay ::-webkit-scrollbar {
+    width: 6px;
+  }
+  #setupWizardOverlay::-webkit-scrollbar-track, #setupWizardOverlay ::-webkit-scrollbar-track {
+    background: #030b16;
+  }
+  #setupWizardOverlay::-webkit-scrollbar-thumb, #setupWizardOverlay ::-webkit-scrollbar-thumb {
+    background: rgba(0, 229, 255, 0.4);
+    border-radius: 10px;
+  }
+  #setupWizardOverlay::-webkit-scrollbar-thumb:hover, #setupWizardOverlay ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 229, 255, 0.8);
+  }
+  #setupWizardOverlay ::selection {
+    background: #00e5ff !important;
+    color: #000 !important;
+  }
+  #setupWizardOverlay input, #setupWizardOverlay textarea {
+    background: rgba(10, 25, 47, 0.7) !important;
+    border: 1px solid rgba(0, 229, 255, 0.2) !important;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5) !important;
+    color: #f0f6fc !important;
+    border-radius: 12px !important;
+    padding: 12px 16px !important;
+    font-family: 'Inter', sans-serif !important;
+    outline: none !important;
+    transition: all 0.3s ease !important;
+    width: 100% !important;
+  }
+  #setupWizardOverlay input:focus, #setupWizardOverlay textarea:focus {
+    border-color: #00e5ff !important;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.4), inset 0 0 10px rgba(0,0,0,0.5) !important;
+  }
+  #setupWizardOverlay label {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 12px !important;
+    color: #8b949e !important;
+    margin-bottom: 6px !important;
+    display: block !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.5px !important;
+  }
+  #sw-next {
+    background: linear-gradient(100deg, #00e5ff 0%, #1fb6ff 55%, #3a86ff 100%) !important;
+    border: none !important;
+    box-shadow: 0 10px 24px rgba(0, 229, 255, 0.32), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -3px 8px rgba(0,60,140,0.25) !important;
+    border-radius: 14px !important;
+    color: #ffffff !important;
+    font-family: 'Orbitron', sans-serif !important;
+    letter-spacing: 2px !important;
+    padding: 12px 24px !important;
+    font-weight: 700 !important;
+    transition: transform 0.2s !important;
+  }
+  #sw-next:active {
+    transform: scale(0.96) !important;
+  }
+  #sw-prev {
+    background: transparent !important;
+    border: 1px solid rgba(0, 229, 255, 0.3) !important;
+    color: #8b949e !important;
+    border-radius: 14px !important;
+    padding: 10px 20px !important;
+    font-family: 'Orbitron', sans-serif !important;
+    letter-spacing: 1px !important;
+    transition: all 0.2s !important;
+  }
+  #sw-prev:hover {
+    color: #00e5ff !important;
+    border-color: #00e5ff !important;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.2) !important;
+  }
+  #sw-prev:active {
+    transform: scale(0.96) !important;
+  }
+
+  @keyframes swCardIn {
+    0% { opacity: 0; transform: translateY(18px) scale(0.97); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes swIconPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.35), 0 0 22px rgba(0, 229, 255, 0.25); }
+    50% { box-shadow: 0 0 0 9px rgba(0, 229, 255, 0), 0 0 26px rgba(0, 229, 255, 0.4); }
+  }
+  #setupWizardOverlay .sw-card {
+    animation: swCardIn 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Progress bar */
+  .sw-progress-track {
+    width: 100%;
+    height: 5px;
+    border-radius: 99px;
+    background: rgba(0, 229, 255, 0.1);
+    border: 1px solid rgba(0, 229, 255, 0.15);
+    overflow: hidden;
+    margin-bottom: 26px;
+  }
+  .sw-progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(100deg, #00e5ff 0%, #1fb6ff 55%, #3a86ff 100%);
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.55);
+    transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Step icon badge */
+  .sw-icon-badge {
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 16px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 45%, rgba(0, 229, 255, 0.16), rgba(58, 134, 255, 0.08));
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    color: #00e5ff;
+    font-size: 22px;
+    line-height: 1;
+    animation: swIconPulse 2.6s ease-in-out infinite;
+  }
+  .sw-icon-badge i {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1em;
+    height: 1em;
+  }
+
+  /* Step content transition */
+  #sw-content {
+    transition: opacity 0.28s ease, transform 0.28s ease;
+  }
+  #sw-content.sw-fade {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+
+  /* Field wrapper with icon */
+  #setupWizardOverlay .sw-field {
+    position: relative;
+  }
+  #setupWizardOverlay .sw-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  #setupWizardOverlay .sw-field-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    color: rgba(0, 229, 255, 0.55);
+    font-size: 15px;
+    pointer-events: none;
+    transition: color 0.2s ease;
+  }
+  #setupWizardOverlay .sw-input-wrap.sw-textarea-wrap .sw-field-icon {
+    top: 18px;
+    transform: none;
+  }
+  #setupWizardOverlay .sw-field input,
+  #setupWizardOverlay .sw-field textarea {
+    padding-left: 40px !important;
+  }
+  #setupWizardOverlay .sw-field input:focus ~ .sw-field-icon,
+  #setupWizardOverlay .sw-field textarea:focus ~ .sw-field-icon {
+    color: #00e5ff;
+  }
+
+  /* Step dots */
+  .sw-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 22px;
+  }
+  .sw-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(0, 229, 255, 0.18);
+    transition: all 0.35s ease;
+  }
+  .sw-dots span.done {
+    background: #00e5ff;
+    box-shadow: 0 0 6px rgba(0, 229, 255, 0.6);
+  }
+  .sw-dots span.active {
+    width: 18px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #00e5ff, #3a86ff);
+  }
+</style>
+
+<!-- Interactive Scanline Overlay -->
+<div class="scanline"></div>
+<canvas id="pCanvas" width="423" height="810"></canvas>
+<!-- Preloader Screen (Cyber Boot Sequence) -->
+<div class="fixed inset-0 bg-[#030407] z-[99999] flex flex-col justify-center items-center transition-all duration-700" id="preloader" style="opacity: 0; visibility: hidden;">
+<div class="font-mono-code text-[0.68rem] tracking-[0.4em] text-red-500 uppercase mb-5 animate-pulse flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+      TTN TOUR BD KERNEL INITIALIZING // CRYPT-SIG v3
+    </div>
+<div class="font-orbitron text-4xl sm:text-5xl font-black tracking-widest text-white flex items-center" id="brandLogoPreloader">TTN TOUR BD</div>
+<div class="w-64 h-[3px] bg-white/10 mt-8 rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-[var(--a)] via-white to-[var(--a)] w-0 transition-all duration-100 shadow-[0_0_15px_var(--a)]" id="plFillBar" style="width: 100%;"></div>
+</div>
+<div class="font-mono-code text-xs text-[var(--a)] mt-3 tracking-widest" id="plPct">100%</div>
+</div>
+<!-- Color Switcher Removed per user request -->
+<!-- Toast Notification Center -->
+<div id="toastBox"></div>
+<!-- Navigation Bar -->
+<header class="sticky top-0 z-50 bg-[#030407]/80 backdrop-blur-[10px] md:backdrop-blur-xl border-b border-white/[0.07]">
+<div class="w-full px-4 sm:px-8 h-20 flex items-center justify-between">
+<!-- Brand Logo -->
+<a class="flex items-center gap-3.5 group" href="#">
+<div class="w-10 h-10 rounded-xl border border-[var(--a)] transition-all group-hover:scale-105 overflow-hidden shrink-0">
+<img src="https://files.catbox.moe/7srh5t.png" alt="AURA Profile" class="w-full h-full object-cover">
+</div>
+<div class="flex flex-col">
+<span class="font-orbitron font-black text-lg tracking-[0.25em] text-white" id="brandLogoNav">TTN TOUR BD</span>
+<span class="font-mono-code text-[0.62rem] text-neutral-400 tracking-wider">Official Website</span>
+</div>
+</a>
+
+<!-- Status & Fast Download Button -->
+<div class="flex items-center gap-4">
+
+<a href="https://t.me/@emonadmin65" target="_blank" rel="noopener noreferrer" class="font-orbitron text-xs font-bold tracking-wider px-4 py-2.5 rounded-xl border border-[var(--ag)] bg-[var(--ad)] text-white hover:bg-[var(--a)] transition-all duration-300 shadow-[0_0_20px_var(--ad)] flex items-center gap-2">
+<i class="ti ti-brand-telegram text-lg"></i>
+<span class="hidden sm:inline">TELEGRAM</span>
+</a>
+</div>
+</div>
+</header>
+<!-- MAIN WRAPPER -->
+<main class="relative z-10">
+<!-- HERO SECTION -->
+<section class="pt-12 pb-20 md:pt-20 md:pb-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" id="hero">
+<!-- Top Trust Header Chips -->
+<div class="flex flex-wrap items-center justify-center md:justify-start gap-2.5 mb-6">
+<div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-neutral-300 font-mono-code text-xs">
+<span class="pulse-dot"></span>
+<span>v2.00 STABLE RELEASE</span>
+</div>
+<div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--ad)] border border-[var(--brda)] text-[var(--a)] font-mono-code text-xs">
+<i class="ti ti-shield-check text-sm"></i>
+<span>PLAY PROTECT CERTIFIED</span>
+</div>
+<div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/10 text-neutral-400 font-mono-code text-xs">
+<i class="ti ti-binary text-sm"></i>
+<span>ZERO TELEMETRY AUDITED</span>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+<!-- Left Hero Content -->
+<div class="lg:col-span-7 text-center lg:text-left">
+<h1 class="font-orbitron text-[5.5vw] sm:text-4xl md:text-5xl lg:text-[3.5rem] font-black tracking-tight text-white leading-[1.08] mb-6 whitespace-nowrap sm:whitespace-normal">Welcome <span class="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#ff7788] to-[var(--a)]" style="text-shadow: 0 0 40px var(--ad);">To Ttn Tour Bd Tournament app download website</span></h1>
+<p class="font-rajdhani text-lg sm:text-xl text-neutral-300 max-w-2xl font-medium leading-relaxed mb-8 mx-auto lg:mx-0">
+            সব থেকে কম টাকা টুর্নামেন্ট খেলার জন্য এখনি ডাউনলোড করুন TTN TOUR BD 
+          </p>
+<!-- Specifications Row -->
+<div class="grid grid-cols-3 gap-2 sm:gap-3 max-w-xl mx-auto lg:mx-0 mb-8">
+<div class="cyber-card p-2.5 sm:p-3.5 text-center flex flex-col justify-center items-center overflow-hidden">
+<span class="font-mono-code text-[0.55rem] sm:text-[0.62rem] text-neutral-400 uppercase tracking-widest block mb-1 whitespace-nowrap">Size</span>
+<span class="font-orbitron text-xs sm:text-lg font-bold text-white whitespace-nowrap">34.2 MB</span>
+</div>
+<div class="cyber-card p-2.5 sm:p-3.5 text-center flex flex-col justify-center items-center overflow-hidden">
+<span class="font-mono-code text-[0.55rem] sm:text-[0.62rem] text-neutral-400 uppercase tracking-widest block mb-1 whitespace-nowrap">Target</span>
+<span class="font-orbitron text-xs sm:text-lg font-bold text-white whitespace-nowrap">Android 9+</span>
+</div>
+<div class="cyber-card p-2.5 sm:p-3.5 text-center flex flex-col justify-center items-center overflow-hidden">
+<span class="font-mono-code text-[0.55rem] sm:text-[0.62rem] text-neutral-400 uppercase tracking-widest block mb-1 whitespace-nowrap">Arch</span>
+<span class="font-orbitron text-[0.7rem] sm:text-lg font-bold text-[var(--a)] whitespace-nowrap">ARM64 &amp; x86</span>
+</div>
+</div>
+<!-- PRIMARY ACTION CTA CARD -->
+<div class="cyber-card p-5 sm:p-6 max-w-xl mx-auto lg:mx-0 border-[var(--brda)]">
+<!-- Main CTA button -->
+<button class="dl-hero-btn w-full py-3 sm:py-4 px-2 sm:px-6 rounded-2xl text-white font-orbitron font-extrabold text-[11px] min-[360px]:text-xs sm:text-sm md:text-base tracking-wider flex items-center justify-center gap-1.5 sm:gap-3 group whitespace-nowrap" id="heroDownloadBtn" onclick="startDownloadProcess()">
+<i class="ti ti-download text-lg sm:text-2xl group-hover:animate-bounce"></i>
+<span>DOWNLOAD APK (v2.00 • 34.2 MB)</span>
+</button>
+<!-- Download Progress Simulation (Initially Hidden) -->
+<div class="hidden mt-4 pt-4 border-t border-white/10" id="dlProgressContainer">
+<div class="flex justify-between items-center font-mono-code text-xs mb-2">
+<span class="text-neutral-300 flex items-center gap-2" id="dlStatusMsg">
+<span class="w-2 h-2 rounded-full bg-[var(--a)] animate-ping"></span>
+                  Allocating fast edge mirror...
+                </span>
+<span class="text-[var(--a)] font-bold" id="dlPercent">0%</span>
+</div>
+<div class="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-[var(--a)] via-white to-[var(--a)] w-0 transition-all duration-150 shadow-[0_0_12px_var(--a)]" id="dlProgressBar"></div>
+</div>
+</div>
+<!-- SHA-256 Checksum Card with 1-Click Copy -->
+<div class="mt-4 flex flex-col sm:flex-row items-center gap-2 min-w-0">
+<div class="hash-badge flex-1 min-w-0 w-full px-3.5 py-2.5 flex items-center justify-between text-xs font-mono-code text-neutral-300">
+<div class="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
+<i class="ti ti-shield-code text-[var(--a)] text-sm flex-shrink-0"></i>
+<span class="text-neutral-400" id="shaLabelText">key:</span>
+<span class="truncate font-mono-code text-white" id="shaText">No</span>
+</div>
+</div>
+<div class="flex items-center gap-2 w-full sm:w-auto">
+<button class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-white/[0.06] hover:bg-[var(--ad)] hover:border-[var(--brda)] border border-white/10 text-white font-mono-code text-xs font-bold transition-all flex items-center justify-center gap-1.5" onclick="copyChecksum()">
+<i class="ti ti-copy text-sm"></i> COPY
+                </button>
+<button class="px-3.5 py-2.5 rounded-xl bg-white/[0.06] hover:bg-[var(--ad)] hover:border-[var(--brda)] border border-white/10 text-white font-mono-code text-xs transition-all flex items-center justify-center gap-1" onclick="openQrModal()" title="Scan QR Code to Download on Phone">
+<i class="ti ti-qrcode text-base"></i>
+</button>
+</div>
+</div>
+<!-- Micro Trust Badges beneath CTA -->
+<div class="mt-4 pt-3 border-t border-white/[0.06] flex flex-wrap items-center justify-center sm:justify-between text-[0.72rem] font-mono-code text-neutral-400 gap-2">
+<span class="flex items-center gap-1"><i class="ti ti-check text-emerald-400"></i> v3 Signature Validated</span>
+<span class="flex items-center gap-1"><i class="ti ti-shield text-blue-400"></i> MicroG &amp; Lineage Ready</span>
+<span class="flex items-center gap-1"><i class="ti ti-server text-[var(--a)]"></i> Cloudflare Edge S3</span>
+</div>
+</div>
+</div>
+<!-- Right Hero: 3D Holographic Device Mockup Showcase -->
+<div class="lg:col-span-5 flex justify-center phone-perspective-frame relative">
+<!-- Cyber Ambient Ring around device -->
+<div class="absolute inset-0 bg-gradient-to-tr from-[var(--ad)] to-transparent rounded-full filter blur-3xl -z-10 opacity-70" style="transform: translateZ(0); will-change: transform;"></div>
+<!-- Smartphone Outer Chassis -->
+<div class="phone-mockup relative w-[290px] sm:w-[320px] h-[610px] sm:h-[640px] bg-[#070810] rounded-[48px] p-3.5 border-2 border-white/15 backdrop-blur-[10px] md:backdrop-blur-2xl">
+<!-- Metallic edge highlight reflection -->
+<div class="absolute inset-0 rounded-[46px] border border-white/20 pointer-events-none"></div>
+<!-- Phone Speaker & Camera punch-hole -->
+<div class="absolute top-6 left-1/2 -translate-x-1/2 w-28 h-5 bg-[#030407] rounded-full z-30 flex items-center justify-center border border-white/10">
+<div class="w-2.5 h-2.5 rounded-full bg-black border border-white/20 mr-2 flex items-center justify-center">
+<div class="w-1 h-1 rounded-full bg-blue-500/80"></div>
+</div>
+<div class="w-10 h-1 bg-white/10 rounded-full"></div>
+</div>
+<!-- Screen Inner Canvas -->
+<div class="w-full h-full bg-[#05060b] rounded-[38px] overflow-hidden flex flex-col relative border border-white/5 pt-10 px-4 pb-4">
+<!-- Screen Topbar -->
+<div class="flex items-center justify-between font-mono-code text-[0.62rem] text-neutral-400 pb-3 border-b border-white/10 mb-4">
+<span>04:20 PM</span>
+<div class="flex items-center gap-1 text-[var(--txt)]">
+<i class="ti ti-wifi text-xs"></i>
+<i class="ti ti-battery-4 text-xs text-[var(--a)]"></i>
+</div>
+</div>
+<!-- In-App Holographic UI Header -->
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-[var(--ad)] border border-[var(--brda)] flex items-center justify-center text-[var(--a)]">
+<i class="ti ti-bolt text-lg"></i>
+</div>
+<div>
+<div class="font-orbitron text-xs font-bold text-white">TTN TOUR BD OS KERNEL</div>
+<div class="font-mono-code text-[0.58rem] text-emerald-400">● SHIELD ACTIVE</div>
+</div>
+</div>
+<div class="w-6 h-6 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xs text-neutral-300">
+<i class="ti ti-bell"></i>
+</div>
+</div>
+<!-- Mock Screen Telemetry Gauge -->
+<div class="bg-black/50 border border-white/10 rounded-2xl p-3.5 mb-3 relative overflow-hidden">
+<div class="absolute -right-4 -bottom-4 w-20 h-20 bg-[var(--ad)] rounded-full blur-xl" style="transform: translateZ(0); will-change: transform;"></div>
+<div class="flex justify-between items-center mb-1">
+<span class="font-mono-code text-[0.6rem] text-neutral-400">CORE DISPATCH BENCHMARK</span>
+<span class="font-mono-code text-[0.6rem] text-[var(--a)] font-bold">0.12 ms</span>
+</div>
+<div class="font-orbitron text-2xl font-black text-white">99.98<span class="text-xs font-mono-code text-neutral-400">/100</span></div>
+<div class="mt-2 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-[var(--a)] w-[92%] rounded-full shadow-[0_0_8px_var(--a)]"></div>
+</div>
+</div>
+<!-- Mock Quick Toggles in Mobile Screen -->
+<div class="grid grid-cols-2 gap-2 mb-3">
+<div class="bg-white/[0.03] border border-white/10 rounded-xl p-2.5">
+<i class="ti ti-shield-lock text-sm text-[var(--a)] mb-1 block"></i>
+<div class="font-orbitron text-[0.65rem] font-bold text-white">ENCLAVE</div>
+<div class="font-mono-code text-[0.55rem] text-neutral-400">ISOLATED</div>
+</div>
+<div class="bg-white/[0.03] border border-white/10 rounded-xl p-2.5">
+<i class="ti ti-antenna-bars-5 text-sm text-emerald-400 mb-1 block"></i>
+<div class="font-orbitron text-[0.65rem] font-bold text-white">P2P NODE</div>
+<div class="font-mono-code text-[0.55rem] text-neutral-400">CONNECTED</div>
+</div>
+</div>
+<!-- Live Mini Frequency Wave inside Mockup -->
+<div class="bg-black/60 border border-white/10 rounded-xl p-2.5 flex-1 flex flex-col justify-between">
+<div class="flex justify-between items-center text-[0.58rem] font-mono-code text-neutral-400">
+<span>REALTIME KERNEL BUS</span>
+<span class="text-[var(--a)]">3.2 GHz</span>
+</div>
+<!-- Simulated Frequency Bars -->
+<div class="flex items-end justify-between gap-1 h-12 pt-2">
+<div class="w-1.5 bg-neutral-700 h-[30%] rounded-t"></div>
+<div class="w-1.5 bg-neutral-600 h-[50%] rounded-t"></div>
+<div class="w-1.5 bg-[var(--a)] h-[85%] rounded-t shadow-[0_0_6px_var(--a)] animate-pulse"></div>
+<div class="w-1.5 bg-[var(--a)] h-[100%] rounded-t shadow-[0_0_8px_var(--a)]"></div>
+<div class="w-1.5 bg-[var(--a)] h-[70%] rounded-t"></div>
+<div class="w-1.5 bg-neutral-600 h-[45%] rounded-t"></div>
+<div class="w-1.5 bg-[var(--a)] h-[90%] rounded-t"></div>
+<div class="w-1.5 bg-neutral-700 h-[60%] rounded-t"></div>
+<div class="w-1.5 bg-[var(--a)] h-[75%] rounded-t"></div>
+<div class="w-1.5 bg-neutral-700 h-[35%] rounded-t"></div>
+</div>
+<div class="text-center font-mono-code text-[0.55rem] text-neutral-400">
+                  SYSTEM STATUS: ULTRA HYPERDRIVE
+                </div>
+</div>
+<!-- Phone Bottom Nav Pill Indicator -->
+<div class="w-24 h-1 bg-white/20 rounded-full mx-auto mt-3"></div>
+</div>
+</div>
+<!-- Floating Specs Hologram Pill Left -->
+<div class="hidden sm:flex absolute -left-6 top-1/3 -translate-y-1/2 cyber-card px-4 py-3 rounded-2xl items-center gap-3 shadow-2xl border-[var(--brda)] animate-bounce" style="animation-duration: 4s;">
+<div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+<i class="ti ti-activity-heartbeat text-lg"></i>
+</div>
+<div>
+<div class="font-mono-code text-[0.62rem] text-neutral-400 uppercase">Jitter Variance</div>
+<div class="font-orbitron text-xs font-bold text-white">&lt; 0.12 ms</div>
+</div>
+</div>
+<!-- Floating Specs Hologram Pill Right -->
+<div class="hidden sm:flex absolute -right-6 bottom-20 cyber-card px-4 py-3 rounded-2xl items-center gap-3 shadow-2xl border-[var(--brda)]">
+<div class="w-9 h-9 rounded-xl bg-[var(--ad)] border border-[var(--brda)] flex items-center justify-center text-[var(--a)]">
+<i class="ti ti-cpu text-lg"></i>
+</div>
+<div>
+<div class="font-mono-code text-[0.62rem] text-neutral-400 uppercase">Idle Memory</div>
+<div class="font-orbitron text-xs font-bold text-white">14.2 MB Footprint</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 2: LIVE TELEMETRY & ARCHITECTURE BENCHMARK -->
+<section class="py-16 border-t border-b border-white/[0.06] bg-[#05060b]/60 relative" id="telemetry">
+<div class="w-full px-4 sm:px-8 lg:px-12">
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-12">
+<div>
+<div class="flex items-center gap-2 font-mono-code text-xs text-[var(--a)] tracking-widest uppercase mb-2">
+<i class="ti ti-chart-dots"></i> REALTIME RUNTIME METRICS
+            </div>
+<h2 class="font-orbitron text-2xl sm:text-3xl font-extrabold text-white">
+              HARDWARE-TIED BENCHMARKS
+            </h2>
+</div>
+<p class="font-rajdhani text-neutral-400 text-sm max-w-md mt-2 md:mt-0">
+            Validated against Snapdragon 8 Gen 3, Tensor G3, and MediaTek Dimensity 9300 flagship test rigs.
+          </p>
+</div>
+<!-- 4 Glassmorphic Telemetry Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+<div class="cyber-card p-6">
+<div class="flex items-center justify-between mb-4">
+<span class="font-mono-code text-xs text-neutral-400 uppercase tracking-wider">Memory Allocation</span>
+<span class="p-2 rounded-lg bg-[var(--ad)] text-[var(--a)]"><i class="ti ti-circuit-cell"></i></span>
+</div>
+<div class="font-orbitron text-3xl font-black text-white mb-1">14.2 <span class="text-sm font-mono-code text-[var(--a)]">MB</span></div>
+<p class="font-rajdhani text-xs text-neutral-400 mb-3">Ultra compact footprint compared to 180MB standard webview wrappers.</p>
+<div class="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-emerald-400 w-[18%]"></div>
+</div>
+</div>
+<div class="cyber-card p-6">
+<div class="flex items-center justify-between mb-4">
+<span class="font-mono-code text-xs text-neutral-400 uppercase tracking-wider">Kernel Jitter</span>
+<span class="p-2 rounded-lg bg-[var(--ad)] text-[var(--a)]"><i class="ti ti-gauge"></i></span>
+</div>
+<div class="font-orbitron text-3xl font-black text-white mb-1">&lt; 0.12 <span class="text-sm font-mono-code text-[var(--a)]">ms</span></div>
+<p class="font-rajdhani text-xs text-neutral-400 mb-3">Thread affinity binding keeps interrupt latency near theoretical silicon floor.</p>
+<div class="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-[var(--a)] w-[94%] shadow-[0_0_8px_var(--a)]"></div>
+</div>
+</div>
+<div class="cyber-card p-6">
+<div class="flex items-center justify-between mb-4">
+<span class="font-mono-code text-xs text-neutral-400 uppercase tracking-wider">Battery Impact</span>
+<span class="p-2 rounded-lg bg-[var(--ad)] text-[var(--a)]"><i class="ti ti-battery-charging"></i></span>
+</div>
+<div class="font-orbitron text-3xl font-black text-white mb-1">0.02 <span class="text-sm font-mono-code text-[var(--a)]">%/hr</span></div>
+<p class="font-rajdhani text-xs text-neutral-400 mb-3">Zero perpetual background alarms, silent wakelock termination engine.</p>
+<div class="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-blue-400 w-[8%]"></div>
+</div>
+</div>
+<div class="cyber-card p-6">
+<div class="flex items-center justify-between mb-4">
+<span class="font-mono-code text-xs text-neutral-400 uppercase tracking-wider">Frame Pipeline</span>
+<span class="p-2 rounded-lg bg-[var(--ad)] text-[var(--a)]"><i class="ti ti-device-desktop-analytics"></i></span>
+</div>
+<div class="font-orbitron text-3xl font-black text-white mb-1">120 <span class="text-sm font-mono-code text-[var(--a)]">FPS</span></div>
+<p class="font-rajdhani text-xs text-neutral-400 mb-3">Vulkan API native drawing pipeline for buttery smooth frame stability.</p>
+<div class="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-[var(--a)] w-[100%] shadow-[0_0_8px_var(--a)]"></div>
+</div>
+</div>
+</div>
+<!-- Interactive Latency Benchmark Visualizer -->
+<div class="cyber-card p-6 border-[var(--brda)]">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+<div class="flex items-center gap-3">
+<span class="w-3 h-3 rounded-full bg-[var(--a)] animate-ping"></span>
+<span class="font-orbitron text-sm font-bold tracking-wider text-white">LIVE CRYPTOGRAPHIC STREAM TEST BENCH</span>
+</div>
+<div class="flex items-center gap-4 font-mono-code text-xs">
+<span class="text-neutral-400">EDGE REGION: <strong class="text-white">US-EAST (ASHBURN)</strong></span>
+<span class="text-[var(--a)]">ROUNDTRIP: <strong id="pingVal">9.4 ms</strong></span>
+</div>
+</div>
+<div class="w-full bg-black/70 rounded-xl p-3 border border-white/10">
+<canvas id="latencyWave" width="356" height="48"></canvas>
+</div>
+<div class="mt-3 flex justify-between items-center text-xs font-mono-code text-neutral-400">
+<span>PACKET SAMPLING: 60 SAMPLES / SEC</span>
+<span class="text-emerald-400">● 100% BIT-PERFECT VERIFIED</span>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 3: FEATURES & ARCHITECTURE CARDS -->
+<section class="py-20 w-full px-4 sm:px-8 lg:px-12" id="features">
+<div class="text-center max-w-3xl mx-auto mb-16">
+<div class="inline-flex items-center gap-2 font-mono-code text-xs text-[var(--a)] tracking-widest uppercase mb-3">
+<i class="ti ti-cpu"></i> SOVEREIGN SECURITY ARCHITECTURE
+        </div>
+<h2 class="font-orbitron text-3xl sm:text-4xl font-extrabold text-white mb-4">
+          ZERO BLOATWARE. ZERO COMPROMISE.
+        </h2>
+<p class="font-rajdhani text-neutral-300 text-lg">
+          Unlike standard Play Store apps packed with analytic daemons and ad tracking libraries, TTN TOUR BD is stripped down to raw binary perfection.
+        </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="cyber-card p-6 flex flex-col justify-between group">
+<div>
+<div class="w-12 h-12 rounded-xl bg-[var(--ad)] border border-[var(--brda)] text-[var(--a)] flex items-center justify-center text-2xl mb-5 group-hover:scale-110 group-hover:shadow-[0_0_20px_var(--a)] transition-all">
+<i class="ti ti-circle-off"></i>
+</div>
+<h3 class="font-orbitron text-lg font-bold text-white mb-2">Zero Bloatware</h3>
+<p class="font-rajdhani text-neutral-400 text-sm leading-relaxed">
+              No Google Play Services requirement. No Firebase, no Adjust, and no telemetry SDKs embedded into the APK package.
+            </p>
+</div>
+<div class="mt-6 pt-4 border-t border-white/5 font-mono-code text-xs text-[var(--a)] flex items-center gap-1">
+<span>GMS-INDEPENDENT</span> <i class="ti ti-arrow-right"></i>
+</div>
+</div>
+<div class="cyber-card p-6 flex flex-col justify-between group">
+<div>
+<div class="w-12 h-12 rounded-xl bg-[var(--ad)] border border-[var(--brda)] text-[var(--a)] flex items-center justify-center text-2xl mb-5 group-hover:scale-110 group-hover:shadow-[0_0_20px_var(--a)] transition-all">
+<i class="ti ti-fingerprint"></i>
+</div>
+<h3 class="font-orbitron text-lg font-bold text-white mb-2">Biometric Enclave</h3>
+<p class="font-rajdhani text-neutral-400 text-sm leading-relaxed">
+              Hardware-backed Android Keystore StrongBox integration ensures your private credentials never touch RAM unencrypted.
+            </p>
+</div>
+<div class="mt-6 pt-4 border-t border-white/5 font-mono-code text-xs text-[var(--a)] flex items-center gap-1">
+<span>STRONGBOX AUTH</span> <i class="ti ti-arrow-right"></i>
+</div>
+</div>
+<div class="cyber-card p-6 flex flex-col justify-between group">
+<div>
+<div class="w-12 h-12 rounded-xl bg-[var(--ad)] border border-[var(--brda)] text-[var(--a)] flex items-center justify-center text-2xl mb-5 group-hover:scale-110 group-hover:shadow-[0_0_20px_var(--a)] transition-all">
+<i class="ti ti-shield-lock"></i>
+</div>
+<h3 class="font-orbitron text-lg font-bold text-white mb-2">Hardware Sandbox</h3>
+<p class="font-rajdhani text-neutral-400 text-sm leading-relaxed">
+              Isolated user-space process with SELinux strict enforcement prevents rogue apps from inspecting socket activity.
+            </p>
+</div>
+<div class="mt-6 pt-4 border-t border-white/5 font-mono-code text-xs text-[var(--a)] flex items-center gap-1">
+<span>SELINUX HARDENED</span> <i class="ti ti-arrow-right"></i>
+</div>
+</div>
+<div class="cyber-card p-6 flex flex-col justify-between group">
+<div>
+<div class="w-12 h-12 rounded-xl bg-[var(--ad)] border border-[var(--brda)] text-[var(--a)] flex items-center justify-center text-2xl mb-5 group-hover:scale-110 group-hover:shadow-[0_0_20px_var(--a)] transition-all">
+<i class="ti ti-flame"></i>
+</div>
+<h3 class="font-orbitron text-lg font-bold text-white mb-2">Ultra-Low Latency</h3>
+<p class="font-rajdhani text-neutral-400 text-sm leading-relaxed">
+              Native C++ 20 core binary compiled with Clang 18 O3 optimization passes for maximum computing throughput.
+            </p>
+</div>
+<div class="mt-6 pt-4 border-t border-white/5 font-mono-code text-xs text-[var(--a)] flex items-center gap-1">
+<span>NATIVE C++ RUNTIME</span> <i class="ti ti-arrow-right"></i>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 4: 3-STEP VISUAL ONBOARDING & SIDELOAD GUIDE -->
+<section class="py-20 border-t border-white/[0.06] bg-[#07080f]/50" id="guide">
+<div class="w-full px-4 sm:px-8 lg:px-12">
+<div class="text-center max-w-2xl mx-auto mb-16">
+<div class="inline-flex items-center gap-2 font-mono-code text-xs text-[var(--a)] tracking-widest uppercase mb-3">
+<i class="ti ti-bolt"></i> RAPID ONBOARDING TIMELINE
+          </div>
+<h2 class="font-orbitron text-3xl sm:text-4xl font-extrabold text-white mb-4">
+            3-STEP SIDELOAD INSTALLATION
+          </h2>
+<p class="font-rajdhani text-neutral-400 text-base">
+            Never installed an APK directly before? Follow these three simple steps to sideload TTN TOUR BD onto any Android device in seconds.
+          </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+<!-- Step 1 -->
+<div class="cyber-card p-8 relative group">
+<div class="font-orbitron text-5xl font-black text-white/10 group-hover:text-[var(--a)] transition-colors mb-4">01</div>
+<div class="w-12 h-12 rounded-xl bg-[var(--ad)] border border-[var(--brda)] text-[var(--a)] flex items-center justify-center text-2xl mb-4">
+<i class="ti ti-download"></i>
+</div>
+<h3 class="font-orbitron text-xl font-bold text-white mb-2">Direct APK Download</h3>
+<p class="font-rajdhani text-neutral-300 text-sm leading-relaxed mb-4">
+              Tap the download button to grab the official cryptographically signed APK package directly from our edge mirrors.
+            </p>
+<div class="font-mono-code text-xs text-neutral-400 bg-white/[0.03] p-2.5 rounded-lg border border-white/5">
+              File: <span class="text-white">TTN TOUR BD-v2.00.apk</span>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="cyber-card p-8 relative group">
+<div class="font-orbitron text-5xl font-black text-white/10 group-hover:text-[var(--a)] transition-colors mb-4">02</div>
+<div class="w-12 h-12 rounded-xl bg-[var(--ad)] border border-[var(--brda)] text-[var(--a)] flex items-center justify-center text-2xl mb-4">
+<i class="ti ti-shield-cog"></i>
+</div>
+<h3 class="font-orbitron text-xl font-bold text-white mb-2">Allow Unknown Sources</h3>
+<p class="font-rajdhani text-neutral-300 text-sm leading-relaxed mb-4">
+              Android OS will ask for permission when installing outside the Play Store. Simply toggle <strong>"Allow from this source"</strong>.
+            </p>
+<div class="font-mono-code text-xs text-neutral-400 bg-white/[0.03] p-2.5 rounded-lg border border-white/5">
+              Settings &gt; Install Unknown Apps
+            </div>
+</div>
+<!-- Step 3 -->
+<div class="cyber-card p-8 relative group">
+<div class="font-orbitron text-5xl font-black text-white/10 group-hover:text-[var(--a)] transition-colors mb-4">03</div>
+<div class="w-12 h-12 rounded-xl bg-[var(--ad)] border border-[var(--brda)] text-[var(--a)] flex items-center justify-center text-2xl mb-4">
+<i class="ti ti-rocket"></i>
+</div>
+<h3 class="font-orbitron text-xl font-bold text-white mb-2">Instant Launch</h3>
+<p class="font-rajdhani text-neutral-300 text-sm leading-relaxed mb-4">
+              Open TTN TOUR BD immediately. Zero phone number registration, zero tracking telemetry, and 100% offline functionality.
+            </p>
+<div class="font-mono-code text-xs text-emerald-400 bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/20">
+              Ready in &lt; 5 seconds
+            </div>
+</div>
+</div>
+</div>
+</section>
+
+</main>
+<!-- RICH TECHNICAL FOOTER -->
+<footer class="bg-[#030407] border-t border-white/[0.08] pt-14 pb-12 relative z-10 text-neutral-400 font-rajdhani">
+<div class="w-full px-4 sm:px-8 lg:px-12">
+<div class="flex flex-col gap-6 mb-12">
+<!-- Brand Info -->
+<div>
+<div class="flex items-center gap-3.5 group mb-6">
+<div class="w-10 h-10 rounded-xl border border-[var(--a)] transition-all group-hover:scale-105 overflow-hidden shrink-0">
+<img src="https://files.catbox.moe/7srh5t.png" alt="AURA Profile" class="w-full h-full object-cover" loading="lazy" decoding="async">
+</div>
+<div class="flex flex-col">
+<span class="font-orbitron font-black text-lg tracking-[0.25em] text-white" id="brandLogoFooter">TTN TOUR BD</span>
+<span class="font-mono-code text-[0.62rem] text-neutral-400 tracking-wider">SECURE KERNEL CLIENT</span>
+</div>
+</div>
+</div>
+<!-- Developer Info -->
+<div>
+<h4 class="font-orbitron text-xs font-bold text-white uppercase tracking-wider mb-4">DEVELOPER INFO</h4>
+<ul class="space-y-3 text-sm font-mono-code">
+<li class="flex items-center gap-2.5 text-neutral-300 hover:text-white transition-colors cursor-default">
+<i class="ti ti-user text-[var(--a)] text-lg"></i> Name: TTN TOUR BD
+</li>
+<li>
+<a href="tel:01817803693" class="flex items-center gap-2.5 text-neutral-300 hover:text-[var(--a)] transition-colors">
+<i class="ti ti-phone text-[var(--a)] text-lg"></i> Phone: 01817803693
+</a>
+</li>
+<li>
+<a href="mailto:mdemon@gmail.com" class="flex items-center gap-2.5 text-neutral-300 hover:text-[var(--a)] transition-colors">
+<i class="ti ti-mail text-[var(--a)] text-lg"></i> Gmail: mdemon@gmail.com
+</a>
+</li>
+</ul>
+</div>
+</div>
+<div class="pt-8 border-t border-white/[0.06] text-center text-[0.7rem] font-mono-code text-neutral-500 tracking-wider w-full">
+  © 2026 TTN TOUR BD. All Rights Reserved.
+</div>
+</div>
+</footer>
+<!-- QR CODE MODAL FOR INSTANT PHONE SIDELOAD -->
+<div class="fixed inset-0 bg-black/80 z-[10000] hidden items-center justify-center p-4" id="qrModal">
+<div class="cyber-card p-6 max-w-sm w-full border-[var(--brda)] relative animate-in fade-in zoom-in duration-200">
+<button class="absolute top-4 right-4 text-neutral-400 hover:text-white" onclick="closeQrModal()">
+<i class="ti ti-x text-xl"></i>
+</button>
+<div class="text-center">
+<div class="w-10 h-10 rounded-xl bg-[var(--ad)] border border-[var(--brda)] text-[var(--a)] flex items-center justify-center mx-auto mb-3">
+<i class="ti ti-qrcode text-xl"></i>
+</div>
+<h3 class="font-orbitron text-lg font-bold text-white mb-1">SCAN FOR MOBILE DOWNLOAD</h3>
+<p class="font-rajdhani text-xs text-neutral-400 mb-4">Point your Android camera at the QR code below to immediately download TTN TOUR BD onto your handset.</p>
+<!-- Generated Cyber QR Code Visual -->
+<div class="p-4 bg-white rounded-2xl inline-block shadow-[0_0_40px_var(--a)] mb-4 border-2 border-[var(--a)] relative group transition-all duration-300 hover:scale-105 hover:shadow-[0_0_60px_var(--a)]">
+<div class="absolute inset-0 bg-[var(--a)]/20 blur-xl rounded-full opacity-50 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" style="transform: translateZ(0); will-change: transform;"></div>
+<img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&amp;data=https%3A%2F%2Ffiles.catbox.moe%2Ftqhosw.apk&amp;color=000000&amp;bgcolor=ffffff" alt="Real QR Code for Download" class="w-44 h-44 rounded-lg object-contain relative z-10" loading="lazy" decoding="async">
+</div>
+<div class="font-mono-code text-[0.68rem] text-neutral-400">
+          DIRECT LINK: <span class="text-[var(--a)]">https://files.catbox.moe/tqhosw.apk</span>
+</div>
+</div>
+</div>
+</div>
+<!-- SCRIPT LOGIC -->
+<script>
+    // Particle Canvas Animation with Dynamic Accent Colors
+    (function () {
+      const c = document.getElementById('pCanvas');
+      // desynchronized: true lets the canvas paint off the main thread on supported browsers
+      const ctx = c.getContext('2d', { alpha: true, desynchronized: true });
+      let W, H;
+      const isSmall = window.innerWidth < 768;
+      function resize() { W = c.width = window.innerWidth; H = c.height = window.innerHeight; }
+      resize();
+      let resizeT;
+      window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(resize, 150); }, { passive: true });
+
+      let accentColor = '#ff0033';
+      window._updateParticleColor = function (col) { accentColor = col; };
+
+      // Mobile: 18 particles, shorter link dist — keeps the look, cuts O(n²) cost by ~44%
+      const COUNT = isSmall ? 18 : 50;
+      const LINK_DIST = isSmall ? 70 : 95;
+      const LINK_DIST2 = LINK_DIST * LINK_DIST; // avoid sqrt in the hot loop
+      const pts = Array.from({ length: COUNT }, () => ({
+        x: Math.random() * (window.innerWidth || 1200),
+        y: Math.random() * (window.innerHeight || 800),
+        r: Math.random() * 1.8 + 0.4,
+        dx: (Math.random() - 0.5) * 0.35,
+        dy: (Math.random() - 0.5) * 0.35,
+        a: Math.random() * 0.35 + 0.1
+      }));
+
+      // Mobile: 30 fps is imperceptibly different from 40 fps but noticeably lighter
+      const FRAME_MS = isSmall ? 1000 / 30 : 1000 / 40;
+      let last = 0;
+      let paused = false;
+      document.addEventListener('visibilitychange', () => { paused = document.hidden; if (!paused) requestAnimationFrame(draw); }, { passive: true });
+
+      // Alpha-bucket batching for link drawing:
+      // Instead of one ctx.stroke() per link (up to n*(n-1)/2 calls), we group
+      // segments into 5 alpha buckets and stroke each bucket in a single path.
+      // This collapses ~153 stroke() calls (18 mobile particles) into ≤5.
+      const BUCKETS = 5;
+      const bucketSegs = Array.from({ length: BUCKETS }, () => []);
+      const bucketAlpha = new Float32Array(BUCKETS);
+
+      function draw(ts) {
+        if (paused) return;
+        if (ts - last < FRAME_MS) { requestAnimationFrame(draw); return; }
+        last = ts;
+
+        ctx.clearRect(0, 0, W, H);
+
+        // --- Particles ---
+        ctx.fillStyle = accentColor;
+        for (let p of pts) {
+          ctx.globalAlpha = p.a;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+          p.x += p.dx; p.y += p.dy;
+          if (p.x < 0) p.x = W; else if (p.x > W) p.x = 0;
+          if (p.y < 0) p.y = H; else if (p.y > H) p.y = 0;
+        }
+
+        // --- Links: alpha-bucket batching ---
+        // Clear buckets
+        for (let bi = 0; bi < BUCKETS; bi++) bucketSegs[bi].length = 0;
+
+        ctx.strokeStyle = accentColor;
+        ctx.lineWidth = 0.6;
+
+        for (let i = 0; i < pts.length; i++) {
+          for (let j = i + 1; j < pts.length; j++) {
+            const a = pts[i], b = pts[j];
+            const dx = a.x - b.x, dy = a.y - b.y;
+            const d2 = dx * dx + dy * dy;
+            if (d2 < LINK_DIST2) {
+              const d = Math.sqrt(d2);
+              const alpha = (1 - d / LINK_DIST) * 0.12;
+              // Map alpha [0, 0.12] to bucket index [0, BUCKETS-1]
+              const bi = Math.min(BUCKETS - 1, (alpha / 0.12 * BUCKETS) | 0);
+              bucketAlpha[bi] = alpha;
+              const seg = bucketSegs[bi];
+              seg.push(a.x, a.y, b.x, b.y);
+            }
+          }
+        }
+
+        // Stroke each non-empty bucket in one path — hugely cheaper than per-link stroke
+        for (let bi = 0; bi < BUCKETS; bi++) {
+          const seg = bucketSegs[bi];
+          if (!seg.length) continue;
+          ctx.globalAlpha = bucketAlpha[bi];
+          ctx.beginPath();
+          for (let k = 0; k < seg.length; k += 4) {
+            ctx.moveTo(seg[k], seg[k + 1]);
+            ctx.lineTo(seg[k + 2], seg[k + 3]);
+          }
+          ctx.stroke();
+        }
+
+        ctx.globalAlpha = 1;
+        requestAnimationFrame(draw);
+      }
+      requestAnimationFrame(draw);
+    })();
+
+    // Preloader Boot Animation Sequence
+    (function () {
+      let p = 0;
+      const pct = document.getElementById('plPct');
+      const bar = document.getElementById('plFillBar');
+      const iv = setInterval(() => {
+        p += Math.random() * 22 + 10;
+        if (p >= 100) {
+          p = 100;
+          clearInterval(iv);
+          if (bar) bar.style.width = '100%';
+          if (pct) pct.textContent = '100%';
+          setTimeout(() => {
+            const pl = document.getElementById('preloader');
+            if (pl) {
+              pl.style.opacity = '0';
+              pl.style.visibility = 'hidden';
+            }
+          }, 350);
+        } else {
+          if (bar) bar.style.width = p + '%';
+          if (pct) pct.textContent = Math.floor(p) + '%';
+        }
+      }, 70);
+    })();
+
+    // Realtime Latency Wave Visualizer Canvas
+    (function () {
+      const c = document.getElementById('latencyWave');
+      if (!c) return;
+      const ctx = c.getContext('2d', { desynchronized: true });
+      let offset = 0;
+      const isSmall = window.innerWidth < 768;
+      // Sample fewer x-pixels on phones — same visible curve, 50% less computation
+      const STEP = isSmall ? 3 : 1;
+      // shadowBlur is expensive on mobile GPUs — halve it; glow is still visible
+      const SHADOW_BLUR = isSmall ? 4 : 8;
+
+      function resize() {
+        c.width = c.parentElement.clientWidth;
+        c.height = 48;
+      }
+      resize();
+      let resizeT;
+      window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(resize, 150); }, { passive: true });
+
+      // Cache the accent color; refresh only when the theme actually changes instead of every frame.
+      let rootColor = getComputedStyle(document.documentElement).getPropertyValue('--a').trim() || '#ff0033';
+      const _origUpdateColor = window._updateParticleColor;
+      window._updateParticleColor = function (col) {
+        if (_origUpdateColor) _origUpdateColor(col);
+        rootColor = col;
+      };
+
+      // Mobile: 30 fps — same visual quality, lighter CPU/GPU
+      const FRAME_MS = isSmall ? 1000 / 30 : 1000 / 40;
+      let last = 0;
+      let paused = false;
+      let pausedIO = false; // paused by IntersectionObserver (off-screen)
+
+      document.addEventListener('visibilitychange', () => {
+        paused = document.hidden;
+        if (!paused && !pausedIO) requestAnimationFrame(renderWave);
+      }, { passive: true });
+
+      // Pause the wave when the telemetry section scrolls off-screen
+      if ('IntersectionObserver' in window) {
+        const obs = new IntersectionObserver(entries => {
+          pausedIO = !entries[0].isIntersecting;
+          if (!pausedIO && !paused) requestAnimationFrame(renderWave);
+        }, { rootMargin: '0px', threshold: 0.05 });
+        obs.observe(c);
+      }
+
+      // Pre-compute half-height and wave constants once
+      const H = 48;
+      const HALF_H = H / 2;
+
+      function renderWave(ts) {
+        if (paused || pausedIO) return;
+        if (ts - last < FRAME_MS) { requestAnimationFrame(renderWave); return; }
+        last = ts;
+
+        const W = c.width;
+        ctx.clearRect(0, 0, W, H);
+        ctx.beginPath();
+        ctx.strokeStyle = rootColor;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = rootColor;
+        ctx.shadowBlur = SHADOW_BLUR;
+
+        for (let x = 0; x < W; x += STEP) {
+          const y = HALF_H + Math.sin((x + offset) * 0.04) * 12 * Math.cos(x * 0.01);
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        offset += 2.5;
+        requestAnimationFrame(renderWave);
+      }
+      requestAnimationFrame(renderWave);
+
+      // Jitter ping value — already skips when tab hidden
+      setInterval(() => {
+        if (document.hidden || pausedIO) return;
+        const ping = (Math.random() * 2 + 8.8).toFixed(1);
+        const el = document.getElementById('pingVal');
+        if (el) el.innerText = ping + ' ms';
+      }, 1200);
+    })();
+
+    // Color Palette Switcher Engine
+    function applyTheme(c, save) {
+      const r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16);
+      const root = document.documentElement;
+      root.style.setProperty('--a', c);
+      root.style.setProperty('--ag', `rgba(${r},${g},${b},0.75)`);
+      root.style.setProperty('--ad', `rgba(${r},${g},${b},0.12)`);
+      root.style.setProperty('--ab', `rgba(${r},${g},${b},0.38)`);
+      root.style.setProperty('--brda', `rgba(${r},${g},${b},0.35)`);
+      root.style.setProperty('--grid-line', `rgba(${r},${g},${b},0.025)`);
+      
+      // Removed changing meta theme-color to prevent the mobile browser background from flashing red
+      // const tm = document.querySelector('meta[name="theme-color"]');
+      // if (tm) tm.content = c;
+      if (window._updateParticleColor) window._updateParticleColor(c);
+
+      document.querySelectorAll('.thDot').forEach(d => {
+        d.classList.toggle('on', d.getAttribute('data-c') === c);
+      });
+      if (save) localStorage.setItem('aurasync_accent_color', c);
+    }
+
+    function setTheme(c, el) {
+      applyTheme(c, true);
+      toggleThemePanel();
+      toastMsg('Accent color applied: ' + c);
+    }
+
+    function toggleThemePanel() {
+      const panel = document.getElementById('mobThemePanel');
+      panel.classList.toggle('open');
+    }
+
+    // Scroll to Download
+    function scrollToDownload() {
+      document.getElementById('hero').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Interactive Download Simulator
+    let isDownloading = false;
+    const DL_FLAG_KEY = 'aura_apk_downloaded';
+
+    function hasAlreadyDownloaded() {
+      return false; // private-mode/storage-blocked fallback: allow the download
+    }
+
+    function markAsDownloaded() {
+      // Removed local storage lock
+    }
+
+    function lockDownloadButton() {
+      const btn = document.getElementById('heroDownloadBtn');
+      if (!btn) return;
+      btn.style.pointerEvents = 'auto';
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+      
+      const box = document.getElementById('dlProgressContainer');
+      if (box) box.classList.add('hidden');
+    }
+
+    // If this browser already completed the download before, lock the button immediately on load.
+    if (hasAlreadyDownloaded()) {
+      document.addEventListener('DOMContentLoaded', lockDownloadButton);
+      if (document.readyState !== 'loading') lockDownloadButton();
+    }
+
+    function startDownloadProcess() {
+      if (isDownloading) return;
+      if (hasAlreadyDownloaded()) {
+        toastMsg('You already downloaded this file on this device.');
+        lockDownloadButton();
+        return;
+      }
+      isDownloading = true;
+
+      const btn = document.getElementById('heroDownloadBtn');
+      const box = document.getElementById('dlProgressContainer');
+      const bar = document.getElementById('dlProgressBar');
+      const pct = document.getElementById('dlPercent');
+      const msg = document.getElementById('dlStatusMsg');
+
+      box.classList.remove('hidden');
+      btn.style.opacity = '0.6';
+      btn.style.pointerEvents = 'none';
+      toastMsg('Initiating binary stream from US-East edge mirror...');
+
+      let p = 0;
+      const iv = setInterval(() => {
+        p += Math.random() * 14 + 8;
+        if (p >= 100) {
+          p = 100;
+          clearInterval(iv);
+          bar.style.width = '100%';
+          pct.innerText = '100%';
+          msg.innerHTML = '<span class="text-emerald-400 font-bold">✓ Package Download Complete: AuraSync-v2.8.4.apk</span>';
+          toastMsg('AuraSync-v2.8.4.apk downloaded successfully!');
+          markAsDownloaded();
+
+          setTimeout(() => {
+            isDownloading = false;
+            lockDownloadButton();
+            if (window.finalDropboxLink) {
+              window.location.href = window.finalDropboxLink;
+            }
+          }, 2000);
+        } else {
+          bar.style.width = p + '%';
+          pct.innerText = Math.floor(p) + '%';
+          if (p < 30) msg.innerText = 'Resolving DNS & cryptographic signature...';
+          else if (p < 75) msg.innerText = 'Streaming verified binary payload (34.2 MB)...';
+          else msg.innerText = 'Performing hardware SHA-256 integrity validation...';
+        }
+      }, 150);
+    }
+
+    // Copy SHA256 Checksum
+    function copyChecksum() {
+      const sha = document.getElementById('shaText').innerText;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(sha).then(() => {
+          toastMsg('SHA-256 hash copied to clipboard');
+        });
+      } else {
+        toastMsg('SHA-256 hash ready');
+      }
+    }
+
+    // FAQ Accordion
+    function toggleFaqAccordion(card) {
+      const content = card.querySelector('.faq-content');
+      const icon = card.querySelector('.faq-icon');
+      const isHidden = content.classList.contains('hidden');
+
+      // Close others for clean single-view
+      document.querySelectorAll('.faq-card').forEach(c => {
+        c.querySelector('.faq-content').classList.add('hidden');
+        c.querySelector('.faq-icon').style.transform = 'rotate(0deg)';
+      });
+
+      if (isHidden) {
+        content.classList.remove('hidden');
+        icon.style.transform = 'rotate(180deg)';
+      }
+    }
+
+    // Toast Notification Creator
+    function toastMsg(msg) {
+      const box = document.getElementById('toastBox');
+      const item = document.createElement('div');
+      item.className = 'toast-item';
+      item.innerHTML = `<i class="ti ti-shield-check text-[var(--a)] text-base"></i> <span>${msg}</span>`;
+      box.appendChild(item);
+
+      requestAnimationFrame(() => {
+        item.classList.add('show');
+      });
+
+      setTimeout(() => {
+        item.classList.remove('show');
+        setTimeout(() => item.remove(), 400);
+      }, 3200);
+    }
+
+    // QR Modal Controls
+    function openQrModal() {
+      const modal = document.getElementById('qrModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeQrModal() {
+      const modal = document.getElementById('qrModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // Close QR modal on backdrop click
+    document.getElementById('qrModal').addEventListener('click', function(e) {
+      if (e.target === this) closeQrModal();
+    });
+
+    // Apply default red accent
+    (function () {
+      applyTheme('#ff0033', false);
+    })();
+  </script>
+  
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon="{&quot;version&quot;:&quot;2024.11.0&quot;,&quot;token&quot;:&quot;2f22d53621574b0f9fa72e49d8caf091&quot;,&quot;r&quot;:1,&quot;spa&quot;:2}" crossorigin="anonymous"></script>
+
+<script>window.finalDropboxLink = "https://files.catbox.moe/tqhosw.apk";</script></body>
+</html>
